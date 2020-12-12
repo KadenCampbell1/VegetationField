@@ -1,30 +1,45 @@
-﻿using UnityEditor;
+﻿using System;
+using System.Collections;
+using UnityEditor;
 using UnityEngine;
 
 public class ReturnToPositionBehaviour : MonoBehaviour
 {
-    public float speed;
-    private float startTime, journeyLength;
+    public float speed, percentComplete;
+    private float startTime;
     private Vector3 startPosition, endPosition;
-    
+
+    private WaitForFixedUpdate wffu;
+
     private void Start()
     {
+        wffu = new WaitForFixedUpdate();
         startPosition = gameObject.transform.position;
+        endPosition = gameObject.transform.position;
     }
 
-    public void ReturnToPosition()
+    private IEnumerator ReturnToStartPosition()
     {
-        startTime = Time.time;
-        var distanceCovered = (Time.time - startTime) * speed;
-        var journeyFraction = distanceCovered / journeyLength;
-
-        transform.position = Vector3.Lerp(startPosition, endPosition, journeyFraction);
+        
+        if (percentComplete >= 1)
+        {
+            percentComplete = 1;
+        }
+    
+        while (percentComplete <= 1)
+        {
+            percentComplete += speed * Time.deltaTime;
+            transform.position = Vector3.Lerp(endPosition, startPosition, percentComplete);
+            // transform.rotation = Quaternion.Lerp(endPosition.rotation, startPosition.rotation, percentComplete);
+            yield return wffu;
+        }
+        
     }
 
     private void OnTriggerExit(Collider other)
     {
+        percentComplete = 0;
         endPosition = gameObject.transform.position;
-        journeyLength = Vector3.Distance(startPosition, endPosition);
-        ReturnToPosition();
+        StartCoroutine(ReturnToStartPosition());
     }
 }
